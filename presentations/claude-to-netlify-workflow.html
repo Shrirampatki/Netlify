@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Claude → Netlify Workflow</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #0a0d14; --surface: #111520; --surface2: #161b2b; --border: #1e2535;
+      --blue: #4f8ef7; --purple: #a78bfa; --green: #34d399; --orange: #fb923c;
+      --text: #e8ecf4; --muted: #6b7899; --dim: #3a4261;
+    }
+    html, body { height: 100%; background: var(--bg); color: var(--text); font-family: 'Space Grotesk', sans-serif; overflow: hidden; }
+    .deck { width: 100%; height: 100vh; position: relative; overflow: hidden; }
+    .slide { position: absolute; inset: 0; bottom: 64px; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 48px 64px; opacity: 0; transform: translateX(60px); transition: opacity 0.45s ease, transform 0.45s ease; pointer-events: none; overflow: hidden; }
+    .slide.active { opacity: 1; transform: translateX(0); pointer-events: auto; }
+    .slide.exit-left { opacity: 0; transform: translateX(-60px); }
+    .nav-bar { position: fixed; bottom: 0; left: 0; right: 0; height: 64px; background: var(--surface); border-top: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; padding: 0 32px; z-index: 100; }
+    .nav-btn { background: none; border: 1px solid var(--border); color: var(--text); font-family: 'Space Mono', monospace; font-size: 12px; padding: 8px 20px; cursor: pointer; border-radius: 4px; transition: border-color 0.2s, color 0.2s; letter-spacing: 0.05em; }
+    .nav-btn:hover { border-color: var(--blue); color: var(--blue); }
+    .nav-btn:disabled { opacity: 0.25; cursor: default; }
+    .nav-btn:disabled:hover { border-color: var(--border); color: var(--text); }
+    .dots { display: flex; gap: 8px; align-items: center; }
+    .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--dim); cursor: pointer; transition: background 0.2s, transform 0.2s; }
+    .dot.active { background: var(--blue); transform: scale(1.4); }
+    .slide-counter { font-family: 'Space Mono', monospace; font-size: 11px; color: var(--muted); letter-spacing: 0.08em; min-width: 60px; text-align: right; }
+    .slide-label { font-family: 'Space Mono', monospace; font-size: 11px; color: var(--muted); letter-spacing: 0.12em; margin-bottom: 20px; align-self: flex-start; }
+    h2 { font-size: clamp(26px, 3.5vw, 42px); font-weight: 600; line-height: 1.2; letter-spacing: -0.02em; }
+    .sub { font-size: clamp(14px, 1.6vw, 18px); color: var(--muted); font-weight: 400; margin-top: 12px; max-width: 640px; line-height: 1.6; }
+    #s1 { align-items: flex-start; justify-content: flex-end; padding-bottom: 80px; }
+    .title-bg { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
+    .pipeline-line { position: absolute; top: 50%; left: -10%; width: 120%; height: 1px; background: linear-gradient(90deg, transparent, var(--blue) 30%, var(--purple) 60%, var(--green) 80%, transparent); transform: translateY(-50%); opacity: 0.25; }
+    .glow-orb { position: absolute; border-radius: 50%; filter: blur(80px); opacity: 0.12; }
+    .orb-blue { width: 600px; height: 600px; background: var(--blue); top: -200px; right: -150px; }
+    .orb-purple { width: 400px; height: 400px; background: var(--purple); bottom: 0; left: -100px; }
+    .title-tag { font-family: 'Space Mono', monospace; font-size: 12px; color: var(--blue); letter-spacing: 0.1em; margin-bottom: 24px; border: 1px solid rgba(79,142,247,0.3); padding: 5px 14px; border-radius: 2px; display: inline-block; }
+    .title-main { font-size: clamp(44px, 6vw, 76px); font-weight: 700; letter-spacing: -0.03em; line-height: 1.0; max-width: 800px; }
+    .title-arrow { color: var(--purple); }
+    .title-meta { margin-top: 24px; font-size: 15px; color: var(--muted); font-family: 'Space Mono', monospace; }
+    .flow { display: flex; align-items: center; gap: 0; width: 100%; max-width: 900px; margin-top: 32px; }
+    .flow-node { flex: 1; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 20px 16px; text-align: center; }
+    .flow-node .fn-icon { font-size: 26px; margin-bottom: 8px; display: block; }
+    .flow-node .fn-label { font-family: 'Space Mono', monospace; font-size: 10px; letter-spacing: 0.1em; color: var(--muted); text-transform: uppercase; }
+    .flow-node .fn-title { font-size: 14px; font-weight: 600; color: var(--text); margin-top: 4px; }
+    .flow-node.blue { border-color: rgba(79,142,247,0.4); }
+    .flow-node.purple { border-color: rgba(167,139,250,0.4); }
+    .flow-node.green { border-color: rgba(52,211,153,0.4); }
+    .flow-node.orange { border-color: rgba(251,146,60,0.4); }
+    .flow-arrow { padding: 0 8px; color: var(--dim); font-size: 18px; flex-shrink: 0; }
+    .step-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; width: 100%; max-width: 1000px; margin-top: 28px; align-items: start; }
+    .step-panel { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 28px; }
+    .step-panel h3 { font-size: 14px; font-weight: 600; color: var(--muted); margin-bottom: 16px; font-family: 'Space Mono', monospace; letter-spacing: 0.06em; }
+    .pill-list { display: flex; flex-direction: column; gap: 10px; }
+    .pill { display: flex; align-items: center; gap: 12px; padding: 10px 14px; border-radius: 6px; background: var(--surface2); border: 1px solid var(--border); font-size: 14px; font-weight: 500; }
+    .pill-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+    .blue-dot { background: var(--blue); }
+    .purple-dot { background: var(--purple); }
+    .code-block { background: #0d1117; border: 1px solid var(--border); border-radius: 8px; padding: 20px; font-family: 'Space Mono', monospace; font-size: 12px; color: #cdd9f5; line-height: 1.7; width: 100%; max-width: 680px; margin-top: 24px; }
+    .c-str { color: var(--green); } .c-key { color: var(--blue); } .c-val { color: var(--orange); } .c-cm { color: var(--muted); }
+    .timeline { width: 100%; max-width: 900px; margin-top: 28px; display: flex; flex-direction: column; }
+    .tl-item { display: grid; grid-template-columns: 140px 40px 1fr; align-items: start; }
+    .tl-label { font-family: 'Space Mono', monospace; font-size: 11px; color: var(--muted); padding: 18px 20px 18px 0; text-align: right; letter-spacing: 0.06em; }
+    .tl-spine { display: flex; flex-direction: column; align-items: center; }
+    .tl-dot { width: 12px; height: 12px; border-radius: 50%; margin-top: 18px; flex-shrink: 0; }
+    .tl-line { width: 2px; flex: 1; background: var(--border); min-height: 24px; }
+    .tl-item:last-child .tl-line { display: none; }
+    .tl-content { padding: 14px 0 14px 20px; }
+    .tl-content strong { font-size: 15px; font-weight: 600; display: block; margin-bottom: 3px; }
+    .tl-content p { font-size: 13px; color: var(--muted); line-height: 1.5; }
+    .skill-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; width: 100%; max-width: 900px; margin-top: 28px; }
+    .skill-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 22px; }
+    .skill-card .sc-icon { font-size: 22px; margin-bottom: 12px; }
+    .skill-card .sc-name { font-size: 14px; font-weight: 600; margin-bottom: 6px; }
+    .skill-card .sc-desc { font-size: 13px; color: var(--muted); line-height: 1.5; }
+    .summary-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; width: 100%; max-width: 860px; margin-top: 28px; }
+    .sum-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 24px; }
+    .sum-card .sc-label { font-family: 'Space Mono', monospace; font-size: 10px; color: var(--muted); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 10px; }
+    .sum-card .sc-value { font-size: 22px; font-weight: 700; }
+    .sum-card .sc-sub { font-size: 13px; color: var(--muted); margin-top: 4px; }
+    .blue-val { color: var(--blue); } .purple-val { color: var(--purple); } .green-val { color: var(--green); } .orange-val { color: var(--orange); }
+    .url-pill { display: inline-flex; align-items: center; gap: 8px; background: rgba(79,142,247,0.08); border: 1px solid rgba(79,142,247,0.25); border-radius: 6px; padding: 10px 18px; font-family: 'Space Mono', monospace; font-size: 13px; color: var(--blue); margin-top: 24px; }
+    @media (max-width: 700px) {
+      .slide { padding: 32px 24px; } .step-layout { grid-template-columns: 1fr; } .skill-grid { grid-template-columns: 1fr 1fr; }
+      .summary-grid { grid-template-columns: 1fr; } .flow { flex-direction: column; } .flow-arrow { transform: rotate(90deg); } h2 { font-size: 24px; }
+    }
+  </style>
+</head>
+<body>
+<div class="deck" id="deck">
+
+  <div class="slide active" id="s1">
+    <div class="title-bg">
+      <div class="glow-orb orb-blue"></div>
+      <div class="glow-orb orb-purple"></div>
+      <div class="pipeline-line"></div>
+    </div>
+    <div class="title-tag">WORKFLOW DOCUMENTATION</div>
+    <div class="title-main">Claude <span class="title-arrow">→</span> GitHub <span class="title-arrow">→</span> Netlify</div>
+    <div class="sub">How a conversation becomes a live, published presentation — automatically, without leaving Claude.</div>
+    <div class="title-meta">Shriram Patki · Aug 2026</div>
+  </div>
+
+  <div class="slide" id="s2">
+    <div class="slide-label">OVERVIEW</div>
+    <h2>A four-step deployment pipeline</h2>
+    <div class="sub">Each presentation starts as a conversation and ends as a live URL — driven entirely by Claude skills and GitHub MCP.</div>
+    <div class="flow">
+      <div class="flow-node blue"><span class="fn-icon">💬</span><div class="fn-label">Step 1</div><div class="fn-title">Claude generates HTML</div></div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-node purple"><span class="fn-icon">🐙</span><div class="fn-label">Step 2</div><div class="fn-title">GitHub MCP pushes file</div></div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-node green"><span class="fn-icon">⚡</span><div class="fn-label">Step 3</div><div class="fn-title">Netlify auto-deploys</div></div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-node orange"><span class="fn-icon">🌐</span><div class="fn-label">Step 4</div><div class="fn-title">Live at public URL</div></div>
+    </div>
+  </div>
+
+  <div class="slide" id="s3">
+    <div class="slide-label">STEP 1</div>
+    <h2>Claude generates the presentation</h2>
+    <div class="step-layout">
+      <div class="step-panel">
+        <h3>HOW IT STARTS</h3>
+        <div class="pill-list">
+          <div class="pill"><span class="pill-dot blue-dot"></span>User invokes <code style="font-family:monospace;font-size:12px;color:var(--purple)">/netlify-presentation-publisher</code></div>
+          <div class="pill"><span class="pill-dot blue-dot"></span>Skill SKILL.md is read — style tokens, structure rules</div>
+          <div class="pill"><span class="pill-dot blue-dot"></span>Claude generates a fully self-contained HTML file</div>
+          <div class="pill"><span class="pill-dot blue-dot"></span>Slides, transitions, navigation — all in one file</div>
+        </div>
+      </div>
+      <div class="step-panel">
+        <h3>DESIGN SYSTEM</h3>
+        <div class="pill-list">
+          <div class="pill"><span class="pill-dot purple-dot"></span>Font: Space Grotesk + Space Mono</div>
+          <div class="pill"><span class="pill-dot purple-dot"></span>Dark base: <code style="font-family:monospace;font-size:12px;color:var(--green)">#0a0d14</code> background</div>
+          <div class="pill"><span class="pill-dot purple-dot"></span>Accents: Blue, Purple, Green, Orange</div>
+          <div class="pill"><span class="pill-dot purple-dot"></span>Keyboard nav + dot indicators + slide counter</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="slide" id="s4">
+    <div class="slide-label">STEP 2</div>
+    <h2>GitHub MCP pushes the file</h2>
+    <div class="sub">Claude uses the GitHub MCP connector — no manual git commands, no copy-paste.</div>
+    <div class="code-block">
+      <span class="c-cm"># Claude calls create_or_update_file via GitHub MCP</span><br>
+      {<br>
+      &nbsp;&nbsp;<span class="c-key">"owner"</span>: <span class="c-str">"Shrirampatki"</span>,<br>
+      &nbsp;&nbsp;<span class="c-key">"repo"</span>: <span class="c-str">"Netlify"</span>,<br>
+      &nbsp;&nbsp;<span class="c-key">"branch"</span>: <span class="c-str">"main"</span>,<br>
+      &nbsp;&nbsp;<span class="c-key">"path"</span>: <span class="c-str">"presentations/topic-name.html"</span>,<br>
+      &nbsp;&nbsp;<span class="c-key">"content"</span>: <span class="c-val">"&lt;!DOCTYPE html&gt;..."</span>,<br>
+      &nbsp;&nbsp;<span class="c-key">"message"</span>: <span class="c-str">"Add topic-name presentation"</span><br>
+      }<br><br>
+      <span class="c-cm"># Then reads + updates presentations/index.html</span>
+    </div>
+  </div>
+
+  <div class="slide" id="s5">
+    <div class="slide-label">STEP 3 → 4</div>
+    <h2>Netlify deploys. URL goes live.</h2>
+    <div class="sub">The GitHub repo <code style="font-family:monospace;font-size:14px;color:var(--blue)">Shrirampatki/Netlify</code> is connected via continuous deployment. Every push to <code style="font-family:monospace;font-size:14px;color:var(--purple)">main</code> triggers an automatic rebuild.</div>
+    <div class="timeline">
+      <div class="tl-item">
+        <div class="tl-label">T+0s</div>
+        <div class="tl-spine"><div class="tl-dot" style="background:var(--blue)"></div><div class="tl-line"></div></div>
+        <div class="tl-content"><strong>Push received</strong><p>GitHub MCP commits the HTML file to the Netlify repo on main.</p></div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-label">T+5s</div>
+        <div class="tl-spine"><div class="tl-dot" style="background:var(--purple)"></div><div class="tl-line"></div></div>
+        <div class="tl-content"><strong>Netlify build triggered</strong><p>Webhook fires; Netlify detects the new commit and starts deploying.</p></div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-label">T+45s</div>
+        <div class="tl-spine"><div class="tl-dot" style="background:var(--green)"></div><div class="tl-line"></div></div>
+        <div class="tl-content"><strong>Deploy complete</strong><p>Static assets are live on the CDN edge network globally.</p></div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-label">T+45s</div>
+        <div class="tl-spine"><div class="tl-dot" style="background:var(--orange)"></div><div class="tl-line"></div></div>
+        <div class="tl-content"><strong>Public URL accessible</strong><p>Anyone with the link can open the presentation — no auth, no build tools.</p></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="slide" id="s6">
+    <div class="slide-label">WHAT MAKES IT REPEATABLE</div>
+    <h2>The skill layer</h2>
+    <div class="sub">Skills are SKILL.md files Claude reads before acting — encoding the opinionated rules that make every output consistent.</div>
+    <div class="skill-grid">
+      <div class="skill-card">
+        <div class="sc-icon">📄</div>
+        <div class="sc-name" style="color:var(--blue)">netlify-presentation-publisher</div>
+        <div class="sc-desc">Defines the full pipeline: generate HTML → push to GitHub → update index.html → confirm URLs.</div>
+      </div>
+      <div class="skill-card">
+        <div class="sc-icon">🎨</div>
+        <div class="sc-name" style="color:var(--purple)">frontend-design</div>
+        <div class="sc-desc">Design principles that make slides look intentional — not AI-generated defaults.</div>
+      </div>
+      <div class="skill-card">
+        <div class="sc-icon">🐙</div>
+        <div class="sc-name" style="color:var(--green)">GitHub MCP</div>
+        <div class="sc-desc">Connected via the Claude Github MCP Connector app. Claude calls file tools directly — no manual git.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="slide" id="s7">
+    <div class="slide-label">SUMMARY</div>
+    <h2>Prompt to published — end to end</h2>
+    <div class="summary-grid">
+      <div class="sum-card"><div class="sc-label">TOOL CALLS</div><div class="sc-value blue-val">4</div><div class="sc-sub">read skill → push HTML → read index → update index</div></div>
+      <div class="sum-card"><div class="sc-label">HUMAN STEPS</div><div class="sc-value green-val">1</div><div class="sc-sub">Type the prompt. Claude handles the rest.</div></div>
+      <div class="sum-card"><div class="sc-label">DEPLOY TIME</div><div class="sc-value purple-val">~45s</div><div class="sc-sub">From MCP push to live Netlify CDN edge.</div></div>
+      <div class="sum-card"><div class="sc-label">OUTPUT</div><div class="sc-value orange-val">Always on</div><div class="sc-sub">Public HTTPS URL, no login, no build environment.</div></div>
+    </div>
+    <div class="url-pill">🌐 shriram-ai-workspace.netlify.app</div>
+  </div>
+
+</div>
+
+<div class="nav-bar">
+  <button class="nav-btn" id="prevBtn" disabled>← PREV</button>
+  <div class="dots" id="dots"></div>
+  <div style="display:flex;align-items:center;gap:20px;">
+    <span class="slide-counter" id="counter">1 / 7</span>
+    <button class="nav-btn" id="nextBtn">NEXT →</button>
+  </div>
+</div>
+
+<script>
+  const slides = document.querySelectorAll('.slide');
+  const dotsEl = document.getElementById('dots');
+  const prevBtn = document.getElementById('prevBtn');
+  const nextBtn = document.getElementById('nextBtn');
+  const counter = document.getElementById('counter');
+  let current = 0;
+
+  slides.forEach((_, i) => {
+    const d = document.createElement('div');
+    d.className = 'dot' + (i === 0 ? ' active' : '');
+    d.addEventListener('click', () => goTo(i));
+    dotsEl.appendChild(d);
+  });
+
+  function goTo(idx) {
+    if (idx < 0 || idx >= slides.length) return;
+    slides[current].classList.remove('active');
+    slides[current].classList.add('exit-left');
+    setTimeout(() => slides[current].classList.remove('exit-left'), 450);
+    current = idx;
+    slides[current].classList.add('active');
+    document.querySelectorAll('.dot').forEach((d, i) => d.classList.toggle('active', i === current));
+    counter.textContent = (current + 1) + ' / ' + slides.length;
+    prevBtn.disabled = current === 0;
+    nextBtn.disabled = current === slides.length - 1;
+  }
+
+  prevBtn.addEventListener('click', () => goTo(current - 1));
+  nextBtn.addEventListener('click', () => goTo(current + 1));
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') goTo(current + 1);
+    if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') goTo(current - 1);
+  });
+</script>
+</body>
+</html>
