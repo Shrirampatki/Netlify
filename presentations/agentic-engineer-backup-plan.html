@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Agentic Engineering — Recruitment Update &amp; Backup Plan</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet" />
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:        #161b20;
+    --panel:     #1d242b;
+    --panel-2:   #232c34;
+    --line:      #333e48;
+    --amber:     #f2a93b;
+    --amber-dim: rgba(242,169,59,.14);
+    --steel:     #7fa8c9;
+    --steel-dim: rgba(127,168,201,.14);
+    --red:       #e2574c;
+    --red-dim:   rgba(226,87,76,.12);
+    --green:     #6bbf8a;
+    --green-dim: rgba(107,191,138,.12);
+    --text:      #eef1f4;
+    --muted:     #93a3af;
+  }
+
+  html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(--text); font-family: 'IBM Plex Sans', sans-serif; }
+
+  body {
+    background-image:
+      repeating-linear-gradient(135deg, rgba(255,255,255,.012) 0px, rgba(255,255,255,.012) 1px, transparent 1px, transparent 26px);
+  }
+
+  h1, h2, h3, .disp { font-family: 'Oswald', sans-serif; font-weight: 600; }
+  .mono { font-family: 'IBM Plex Mono', monospace; }
+
+  /* ── Deck shell ── */
+  .deck { position: relative; width: 100%; height: 100%; }
+
+  .slide {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column;
+    padding-bottom: 78px;
+    opacity: 0; pointer-events: none;
+    transform: translateX(50px);
+    transition: opacity .4s ease, transform .4s ease;
+  }
+  .slide.active { opacity: 1; pointer-events: all; transform: translateX(0); }
+  .slide.exit   { opacity: 0; transform: translateX(-50px); }
+
+  /* ── Fascia header (instrument-cluster strip) ── */
+  .fascia {
+    display: flex; align-items: center; gap: 18px;
+    padding: 26px 52px 20px;
+    border-bottom: 2px solid var(--line);
+    background: linear-gradient(180deg, rgba(255,255,255,.02), transparent);
+    flex-shrink: 0;
+  }
+  .fascia::after {
+    content: ''; position: absolute; left: 52px; right: 52px; height: 1px;
+  }
+  .badge-plate {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px; letter-spacing: .05em; color: var(--muted);
+    border: 1px solid var(--line); border-radius: 4px;
+    padding: 4px 10px;
+  }
+  .fascia-title { font-size: 21px; letter-spacing: .01em; }
+  .fascia-sub { font-size: 12.5px; color: var(--muted); margin-left: auto; font-family: 'IBM Plex Mono', monospace; }
+
+  .body-wrap { flex: 1; overflow-y: auto; padding: 34px 52px 10px; display: flex; flex-direction: column; gap: 26px; }
+
+  /* ── Title slide ── */
+  .title-slide .body-wrap { flex-direction: row; align-items: center; gap: 48px; }
+  .title-copy { flex: 1.2; display: flex; flex-direction: column; gap: 18px; }
+  .plate {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-family: 'IBM Plex Mono', monospace; font-size: 11.5px; color: var(--amber);
+    border: 1px solid rgba(242,169,59,.35); background: var(--amber-dim);
+    border-radius: 3px; padding: 5px 12px; width: fit-content; letter-spacing: .04em;
+  }
+  .plate .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--amber); box-shadow: 0 0 6px var(--amber); }
+  .headline { font-size: clamp(28px, 3.6vw, 42px); line-height: 1.18; }
+  .headline .accent { color: var(--amber); }
+  .lede { font-size: 15px; color: var(--muted); max-width: 460px; line-height: 1.65; }
+  .meeting-line { font-size: 13px; color: var(--steel); font-family: 'IBM Plex Mono', monospace; }
+
+  /* ── Decorative dial (title slide) ── */
+  .dial-wrap { flex: 1; display: flex; align-items: center; justify-content: center; }
+  .dial svg { width: 100%; max-width: 300px; height: auto; }
+
+  /* ── Readout blocks (digital trip-computer style numbers) ── */
+  .readouts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  .readout {
+    background: var(--panel); border: 1px solid var(--line); border-radius: 6px;
+    padding: 18px 20px; position: relative; overflow: hidden;
+  }
+  .readout::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+  }
+  .readout.amber::before { background: var(--amber); }
+  .readout.steel::before { background: var(--steel); }
+  .readout.red::before   { background: var(--red); }
+  .readout-val { font-family: 'IBM Plex Mono', monospace; font-size: 38px; font-weight: 600; line-height: 1; letter-spacing: -.01em; }
+  .readout.amber .readout-val { color: var(--amber); }
+  .readout.steel .readout-val { color: var(--steel); }
+  .readout.red   .readout-val { color: var(--red); }
+  .readout-lbl { font-size: 12.5px; color: var(--muted); margin-top: 8px; }
+  .readout-note { font-size: 11.5px; color: var(--muted); margin-top: 4px; opacity: .8; }
+
+  /* ── Section label ── */
+  .sec-label { font-size: 12px; color: var(--muted); font-family: 'IBM Plex Mono', monospace; letter-spacing: .03em; }
+
+  /* ── Warning panel ── */
+  .warn-panel {
+    display: flex; gap: 14px; align-items: flex-start;
+    background: var(--red-dim); border: 1px solid rgba(226,87,76,.35);
+    border-radius: 6px; padding: 16px 20px;
+  }
+  .warn-icon { font-size: 18px; line-height: 1.4; }
+  .warn-text { font-size: 14px; line-height: 1.6; color: var(--text); }
+  .warn-text strong { color: var(--red); }
+
+  .note-panel {
+    display: flex; gap: 14px; align-items: flex-start;
+    background: var(--amber-dim); border: 1px solid rgba(242,169,59,.35);
+    border-radius: 6px; padding: 16px 20px;
+  }
+  .note-text { font-size: 14px; line-height: 1.6; color: var(--text); }
+  .note-text strong { color: var(--amber); }
+  .note-text .flag { color: var(--amber); font-family: 'IBM Plex Mono', monospace; font-size: 12.5px; }
+
+  /* ── Funnel strip ── */
+  .funnel-strip { display: flex; align-items: stretch; gap: 10px; }
+  .funnel-step {
+    flex: 1; background: var(--panel); border: 1px solid var(--line); border-radius: 6px;
+    padding: 14px 16px; text-align: center;
+  }
+  .funnel-step .fv { font-family: 'IBM Plex Mono', monospace; font-size: 22px; font-weight: 600; }
+  .funnel-step .fl { font-size: 11.5px; color: var(--muted); margin-top: 4px; }
+  .funnel-arrow { display: flex; align-items: center; color: var(--line); font-size: 18px; }
+
+  /* ── Roster (backup plan) ── */
+  .roster { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+  .roster-card {
+    background: var(--panel); border: 1px solid var(--line); border-radius: 8px;
+    padding: 20px 18px; display: flex; flex-direction: column; gap: 10px;
+    position: relative;
+  }
+  .roster-tag {
+    font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; color: var(--steel);
+    background: var(--steel-dim); border: 1px solid rgba(127,168,201,.3);
+    border-radius: 3px; padding: 3px 8px; width: fit-content; letter-spacing: .03em;
+  }
+  .roster-name { font-size: 17px; font-weight: 600; }
+  .roster-role { font-size: 12.5px; color: var(--muted); line-height: 1.5; }
+  .roster-arrow { font-size: 12px; color: var(--amber); font-family: 'IBM Plex Mono', monospace; margin-top: auto; }
+
+  .plan-total {
+    display: flex; align-items: center; gap: 18px;
+    background: var(--green-dim); border: 1px solid rgba(107,191,138,.35);
+    border-radius: 6px; padding: 16px 20px;
+  }
+  .plan-total .pt-val { font-family: 'IBM Plex Mono', monospace; font-size: 28px; color: var(--green); font-weight: 600; }
+  .plan-total .pt-txt { font-size: 13.5px; color: var(--text); line-height: 1.5; }
+
+  /* ── Nav bar ── */
+  .nav-bar {
+    position: fixed; bottom: 0; left: 0; right: 0; height: 74px;
+    background: rgba(20,25,29,.94); backdrop-filter: blur(10px);
+    border-top: 2px solid var(--line);
+    display: flex; align-items: center; justify-content: center; gap: 26px;
+    z-index: 99;
+  }
+  .nav-btn {
+    background: var(--panel); border: 1px solid var(--line); color: var(--text);
+    border-radius: 5px; padding: 9px 20px; cursor: pointer;
+    font-family: 'IBM Plex Sans', sans-serif; font-size: 13px; font-weight: 500;
+    transition: border-color .2s, color .2s;
+  }
+  .nav-btn:hover:not(:disabled) { border-color: var(--amber); color: var(--amber); }
+  .nav-btn:disabled { opacity: .3; cursor: not-allowed; }
+  .leds { display: flex; gap: 9px; align-items: center; }
+  .led { width: 9px; height: 9px; border-radius: 2px; background: var(--line); cursor: pointer; transition: background .25s; }
+  .led.active { background: var(--amber); box-shadow: 0 0 6px var(--amber); }
+  .counter { font-family: 'IBM Plex Mono', monospace; font-size: 11.5px; color: var(--muted); min-width: 46px; text-align: center; }
+
+  @media (max-width: 760px) {
+    .fascia, .body-wrap { padding-left: 22px; padding-right: 22px; }
+    .title-slide .body-wrap { flex-direction: column; }
+    .readouts, .roster { grid-template-columns: repeat(2, 1fr); }
+    .funnel-strip { flex-wrap: wrap; }
+  }
+</style>
+</head>
+<body>
+<div class="deck" id="deck">
+
+  <!-- SLIDE 1 — TITLE -->
+  <div class="slide title-slide active" id="slide-0">
+    <div class="fascia">
+      <span class="badge-plate">NEXTEER · DATA &amp; ANALYTICS</span>
+      <span class="fascia-sub">Prepared for Andy</span>
+    </div>
+    <div class="body-wrap">
+      <div class="title-copy">
+        <div class="plate"><span class="dot"></span>Recruitment Update</div>
+        <h1 class="headline">Standing up the<br/><span class="accent">agentic engineering</span> team</h1>
+        <p class="lede">Where the external search stands today, the constraint that's slowing it down, and a backup plan to get four engineers in seat without waiting on it.</p>
+        <p class="meeting-line">// Review for upcoming meeting with Andy</p>
+      </div>
+      <div class="dial-wrap">
+        <div class="dial">
+          <svg viewBox="0 0 240 200" xmlns="http://www.w3.org/2000/svg">
+            <path d="M 30 150 A 90 90 0 0 1 210 150" fill="none" stroke="#333e48" stroke-width="10" stroke-linecap="round"/>
+            <path d="M 30 150 A 90 90 0 0 1 150 63" fill="none" stroke="#f2a93b" stroke-width="10" stroke-linecap="round"/>
+            <g stroke="#4a5661" stroke-width="2">
+              <line x1="30" y1="150" x2="42" y2="150"/>
+              <line x1="45" y1="86" x2="55" y2="92"/>
+              <line x1="120" y1="60" x2="120" y2="72"/>
+              <line x1="195" y1="86" x2="185" y2="92"/>
+              <line x1="210" y1="150" x2="198" y2="150"/>
+            </g>
+            <line x1="120" y1="150" x2="150" y2="90" stroke="#eef1f4" stroke-width="4" stroke-linecap="round"/>
+            <circle cx="120" cy="150" r="9" fill="#eef1f4"/>
+            <circle cx="120" cy="150" r="4" fill="#161b20"/>
+            <text x="120" y="185" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="13" fill="#93a3af">HIRING PIPELINE</text>
+          </svg>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 2 — CHALLENGE -->
+  <div class="slide" id="slide-1">
+    <div class="fascia">
+      <span class="badge-plate">02</span>
+      <span class="fascia-title">The challenge: sponsorship is the bottleneck</span>
+      <span class="fascia-sub">External pipeline</span>
+    </div>
+    <div class="body-wrap">
+
+      <div class="warn-panel">
+        <div class="warn-icon">⚠</div>
+        <div class="warn-text">
+          A <strong>majority of the candidates surfacing for this role need visa or immigration sponsorship</strong>.
+          That's forced us to pass on several otherwise strong candidates, and it's the main thing slowing the external track down.
+        </div>
+      </div>
+
+      <div class="sec-label">Pipeline to date</div>
+      <div class="readouts">
+        <div class="readout amber">
+          <div class="readout-val">7</div>
+          <div class="readout-lbl">Candidates interviewed</div>
+          <div class="readout-note">To date</div>
+        </div>
+        <div class="readout steel">
+          <div class="readout-val">4</div>
+          <div class="readout-lbl">Lined up this week</div>
+          <div class="readout-note">Scheduled interviews</div>
+        </div>
+        <div class="readout red">
+          <div class="readout-val">Majority</div>
+          <div class="readout-lbl">Need sponsorship</div>
+          <div class="readout-note">Primary drop-off reason</div>
+        </div>
+      </div>
+
+      <div class="sec-label">What's happening in the funnel</div>
+      <div class="funnel-strip">
+        <div class="funnel-step">
+          <div class="fv" style="color:var(--steel)">7</div>
+          <div class="fl">Interviewed</div>
+        </div>
+        <div class="funnel-arrow">→</div>
+        <div class="funnel-step">
+          <div class="fv" style="color:var(--red)">Dropped</div>
+          <div class="fl">Sponsorship required, not viable</div>
+        </div>
+        <div class="funnel-arrow">→</div>
+        <div class="funnel-step">
+          <div class="fv" style="color:var(--amber)">4</div>
+          <div class="fl">Next up this week</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- SLIDE 3 — BACKUP PLAN -->
+  <div class="slide" id="slide-2">
+    <div class="fascia">
+      <span class="badge-plate">03</span>
+      <span class="fascia-title">Proposal: repurpose internal talent</span>
+      <span class="fascia-sub">Backup plan</span>
+    </div>
+    <div class="body-wrap">
+
+      <p class="lede" style="max-width:640px;">
+        While the external search continues, we can stand up four agentic engineers now — no sponsorship timeline to wait on —
+        by repurposing internal resources from the tools team, plus one engineer with hands-on agent development experience.
+      </p>
+
+      <div class="sec-label">Proposed roster</div>
+      <div class="roster">
+        <div class="roster-card">
+          <span class="roster-tag">Tools Team</span>
+          <div class="roster-name">Martin Beebo</div>
+          <div class="roster-role">Repurposed as Agentic Engineer</div>
+          <div class="roster-arrow">→ Agentic Engineering</div>
+        </div>
+        <div class="roster-card">
+          <span class="roster-tag">Tools Team</span>
+          <div class="roster-name">Terry Smith</div>
+          <div class="roster-role">Repurposed as Agentic Engineer</div>
+          <div class="roster-arrow">→ Agentic Engineering</div>
+        </div>
+        <div class="roster-card">
+          <span class="roster-tag">Tools Team</span>
+          <div class="roster-name">Dan Midor</div>
+          <div class="roster-role">Repurposed as Agentic Engineer</div>
+          <div class="roster-arrow">→ Agentic Engineering</div>
+        </div>
+        <div class="roster-card">
+          <span class="roster-tag">Lonnie Newton's Team</span>
+          <div class="roster-name">Alex Gaul</div>
+          <div class="roster-role">Prior hands-on agent development experience</div>
+          <div class="roster-arrow">→ Agentic Engineering</div>
+        </div>
+      </div>
+
+      <div class="plan-total">
+        <div class="pt-val">4</div>
+        <div class="pt-txt">engineers in seat immediately — matching the external hiring goal without waiting on sponsorship timelines.</div>
+      </div>
+
+      <div class="note-panel">
+        <div class="warn-icon">📍</div>
+        <div class="note-text">
+          <strong>Open item:</strong> none of the four will be relocating to <span class="flag">[confirm site — placeholder, please correct]</span>.
+          Flagging this now so we can align with Andy on how the team works around that.
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</div><!-- /deck -->
+
+<div class="nav-bar">
+  <button class="nav-btn" id="prevBtn" onclick="navigate(-1)" disabled>← Prev</button>
+  <div class="leds" id="leds"></div>
+  <div class="counter" id="counter">1 / 3</div>
+  <button class="nav-btn" id="nextBtn" onclick="navigate(1)">Next →</button>
+</div>
+
+<script>
+  const slides = document.querySelectorAll('.slide');
+  let current = 0;
+
+  const ledsEl = document.getElementById('leds');
+  slides.forEach((_, i) => {
+    const d = document.createElement('div');
+    d.className = 'led' + (i === 0 ? ' active' : '');
+    d.onclick = () => goTo(i);
+    ledsEl.appendChild(d);
+  });
+
+  function goTo(n) {
+    slides[current].classList.remove('active');
+    slides[current].classList.add('exit');
+    setTimeout(() => slides[current].classList.remove('exit'), 400);
+    current = n;
+    slides[current].classList.add('active');
+    document.querySelectorAll('.led').forEach((d, i) => d.classList.toggle('active', i === current));
+    document.getElementById('counter').textContent = (current + 1) + ' / ' + slides.length;
+    document.getElementById('prevBtn').disabled = current === 0;
+    document.getElementById('nextBtn').disabled = current === slides.length - 1;
+  }
+
+  function navigate(dir) {
+    const next = current + dir;
+    if (next >= 0 && next < slides.length) goTo(next);
+  }
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') navigate(1);
+    if (e.key === 'ArrowLeft'  || e.key === 'ArrowUp')   navigate(-1);
+  });
+</script>
+</body>
+</html>
