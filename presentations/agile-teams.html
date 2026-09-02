@@ -18,7 +18,7 @@
   html,body{
     width:100%; height:100%; overflow:hidden;
     font-family:Arial, Helvetica, sans-serif;
-    background:var(--nx-black);
+    background:var(--nx-white);
     color:var(--nx-black);
   }
   .deck{position:relative; width:100vw; height:100vh; overflow:hidden;}
@@ -36,27 +36,21 @@
   .slide.active{transform:translateX(0); opacity:1; z-index:2;}
   .slide.prev{transform:translateX(-100%); opacity:1; z-index:1;}
 
-  .slide.dark{background:var(--nx-black); color:var(--nx-white);}
   .slide.red{background:var(--nx-red); color:var(--nx-white);}
-
-  /* circuit texture */
-  .circuit-bg{
-    position:absolute; inset:0; pointer-events:none; opacity:.5;
-  }
 
   .eyebrow{
     display:flex; align-items:center; gap:14px;
     font-size:14px; font-weight:bold; letter-spacing:2px;
     color:var(--nx-red); margin-bottom:18px;
   }
-  .slide.dark .eyebrow, .slide.red .eyebrow{color:var(--nx-white);}
+  .slide.red .eyebrow{color:var(--nx-white);}
   .eyebrow .num{
     color:var(--nx-gray-mid);
     font-weight:bold;
   }
-  .slide.dark .eyebrow .num, .slide.red .eyebrow .num{color:rgba(255,255,255,.6);}
+  .slide.red .eyebrow .num{color:rgba(255,255,255,.6);}
   .eyebrow .line{flex:1; height:1px; background:var(--nx-gray-light);}
-  .slide.dark .eyebrow .line, .slide.red .eyebrow .line{background:rgba(255,255,255,.3);}
+  .slide.red .eyebrow .line{background:rgba(255,255,255,.3);}
 
   h1{
     font-size:52px; font-weight:bold; text-transform:uppercase;
@@ -69,21 +63,27 @@
   .subtitle{
     font-size:19px; color:var(--nx-gray-dark); max-width:700px; line-height:1.5;
   }
-  .slide.dark .subtitle, .slide.red .subtitle{color:rgba(255,255,255,.85);}
+  .slide.red .subtitle{color:rgba(255,255,255,.85);}
 
   .content{flex:1; display:flex; flex-direction:column; justify-content:center; overflow:hidden;}
 
   /* Title slide */
   .title-slide{justify-content:center; align-items:flex-start;}
   .title-slide .kicker{
-    font-size:15px; font-weight:bold; letter-spacing:4px; color:var(--nx-red-dark);
-    background:var(--nx-white); display:inline-block; padding:6px 14px; margin-bottom:28px;
+    font-size:15px; font-weight:bold; letter-spacing:4px; color:var(--nx-white);
+    background:var(--nx-red); display:inline-block; padding:6px 14px; margin-bottom:28px;
   }
-  .title-slide h1{font-size:76px; color:var(--nx-white);}
-  .title-slide .subtitle{color:rgba(255,255,255,.85); font-size:21px; margin-top:10px;}
+  .title-slide h1{font-size:76px; color:var(--nx-black);}
+  .title-slide .subtitle{color:var(--nx-gray-dark); font-size:21px; margin-top:10px;}
   .title-wedge{
-    position:absolute; right:-10%; bottom:-10%; width:70%; height:70%;
-    background:linear-gradient(135deg, transparent 45%, rgba(255,255,255,.06) 46%, transparent 47%);
+    position:absolute; right:-6%; bottom:-14%; width:62%; height:62%;
+    background:linear-gradient(135deg, transparent 46%, var(--nx-gray-light) 47%, transparent 48%);
+    opacity:.5;
+  }
+  .title-wedge.wedge2{
+    position:absolute; right:8%; bottom:-22%; width:46%; height:46%;
+    background:linear-gradient(135deg, transparent 46%, var(--nx-red) 47%, transparent 48%);
+    opacity:.9;
   }
 
   /* Card grid */
@@ -113,13 +113,6 @@
   }
   .card p{font-size:14.5px; color:var(--nx-gray-dark); line-height:1.5;}
 
-  .pill-row{display:flex; flex-wrap:wrap; gap:12px; margin-top:8px;}
-  .pill{
-    border:1.5px solid var(--nx-red); color:var(--nx-red);
-    border-radius:20px; padding:8px 18px; font-size:13.5px; font-weight:bold;
-    text-transform:uppercase; letter-spacing:.5px;
-  }
-
   .role-list{display:flex; flex-direction:column; gap:16px; margin-top:6px;}
   .role-row{display:flex; gap:20px; align-items:flex-start;}
   .role-row .badge{width:52px; height:52px; font-size:20px;}
@@ -137,14 +130,7 @@
     font-size:11px; letter-spacing:1px; color:var(--nx-gray-mid);
   }
   .logo-mark{position:absolute; right:26px; bottom:22px; width:140px; opacity:.95;}
-  .slide.dark .logo-mark svg path, .slide.red .logo-mark svg path{}
 
-  /* Bottom nav bar */
-  .navbar{
-    position:fixed; left:0; bottom:0; width:100%; height:0;
-    display:flex; align-items:center; justify-content:center;
-    z-index:10;
-  }
   .nav-inner{
     position:fixed; bottom:22px; left:50%; transform:translateX(-50%);
     display:flex; align-items:center; gap:22px;
@@ -152,6 +138,7 @@
     border:1px solid var(--nx-gray-light);
     border-radius:30px; padding:10px 20px;
     box-shadow:0 4px 18px rgba(0,0,0,.12);
+    z-index:10;
   }
   .nav-btn{
     width:34px; height:34px; border-radius:50%; border:1.5px solid var(--nx-gray-dark);
@@ -184,8 +171,9 @@
 <div class="deck" id="deck">
 
   <!-- SLIDE 1: TITLE -->
-  <section class="slide dark title-slide active" data-index="0">
+  <section class="slide title-slide active" data-index="0">
     <div class="title-wedge"></div>
+    <div class="title-wedge wedge2"></div>
     <div class="kicker">NEXTEER · WAYS OF WORKING</div>
     <h1>Agile Teams</h1>
     <p class="subtitle">What makes a team agile, and how a high-performing agile team should actually operate day to day.</p>
