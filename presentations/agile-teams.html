@@ -1,1 +1,496 @@
-PLACEHOLDER
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agile Teams — How They Should Work</title>
+<style>
+  :root{
+    --nx-red:#DC0202;
+    --nx-red-dark:#910101;
+    --nx-black:#0C0C0C;
+    --nx-gray-dark:#3F3F3F;
+    --nx-gray-mid:#979797;
+    --nx-gray-light:#D3D3D3;
+    --nx-white:#FFFFFF;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html,body{
+    width:100%; height:100%; overflow:hidden;
+    font-family:Arial, Helvetica, sans-serif;
+    background:var(--nx-black);
+    color:var(--nx-black);
+  }
+  .deck{position:relative; width:100vw; height:100vh; overflow:hidden;}
+
+  .slide{
+    position:absolute; top:0; left:0;
+    width:100%; height:100%;
+    background:var(--nx-white);
+    display:flex; flex-direction:column;
+    padding:70px 90px 110px 90px;
+    transform:translateX(100%);
+    transition:transform .5s ease;
+    opacity:0;
+  }
+  .slide.active{transform:translateX(0); opacity:1; z-index:2;}
+  .slide.prev{transform:translateX(-100%); opacity:1; z-index:1;}
+
+  .slide.dark{background:var(--nx-black); color:var(--nx-white);}
+  .slide.red{background:var(--nx-red); color:var(--nx-white);}
+
+  /* circuit texture */
+  .circuit-bg{
+    position:absolute; inset:0; pointer-events:none; opacity:.5;
+  }
+
+  .eyebrow{
+    display:flex; align-items:center; gap:14px;
+    font-size:14px; font-weight:bold; letter-spacing:2px;
+    color:var(--nx-red); margin-bottom:18px;
+  }
+  .slide.dark .eyebrow, .slide.red .eyebrow{color:var(--nx-white);}
+  .eyebrow .num{
+    color:var(--nx-gray-mid);
+    font-weight:bold;
+  }
+  .slide.dark .eyebrow .num, .slide.red .eyebrow .num{color:rgba(255,255,255,.6);}
+  .eyebrow .line{flex:1; height:1px; background:var(--nx-gray-light);}
+  .slide.dark .eyebrow .line, .slide.red .eyebrow .line{background:rgba(255,255,255,.3);}
+
+  h1{
+    font-size:52px; font-weight:bold; text-transform:uppercase;
+    letter-spacing:1px; line-height:1.08; margin-bottom:20px;
+  }
+  h2{
+    font-size:40px; font-weight:bold; text-transform:uppercase;
+    letter-spacing:1px; line-height:1.1; margin-bottom:22px;
+  }
+  .subtitle{
+    font-size:19px; color:var(--nx-gray-dark); max-width:700px; line-height:1.5;
+  }
+  .slide.dark .subtitle, .slide.red .subtitle{color:rgba(255,255,255,.85);}
+
+  .content{flex:1; display:flex; flex-direction:column; justify-content:center; overflow:hidden;}
+
+  /* Title slide */
+  .title-slide{justify-content:center; align-items:flex-start;}
+  .title-slide .kicker{
+    font-size:15px; font-weight:bold; letter-spacing:4px; color:var(--nx-red-dark);
+    background:var(--nx-white); display:inline-block; padding:6px 14px; margin-bottom:28px;
+  }
+  .title-slide h1{font-size:76px; color:var(--nx-white);}
+  .title-slide .subtitle{color:rgba(255,255,255,.85); font-size:21px; margin-top:10px;}
+  .title-wedge{
+    position:absolute; right:-10%; bottom:-10%; width:70%; height:70%;
+    background:linear-gradient(135deg, transparent 45%, rgba(255,255,255,.06) 46%, transparent 47%);
+  }
+
+  /* Card grid */
+  .cards{display:grid; gap:22px;}
+  .cards.cols-4{grid-template-columns:repeat(4,1fr);}
+  .cards.cols-3{grid-template-columns:repeat(3,1fr);}
+  .cards.cols-2{grid-template-columns:repeat(2,1fr);}
+
+  .card{
+    border:1px solid var(--nx-gray-light);
+    border-radius:2px;
+    padding:26px 22px;
+    display:flex; flex-direction:column; gap:12px;
+    background:var(--nx-white);
+  }
+  .card .badge{
+    width:44px; height:44px; border-radius:50%;
+    background:var(--nx-red); color:var(--nx-white);
+    display:flex; align-items:center; justify-content:center;
+    font-weight:bold; font-size:18px; flex-shrink:0;
+  }
+  .card .badge.outline{
+    background:var(--nx-white); color:var(--nx-red); border:2px solid var(--nx-red);
+  }
+  .card h3{
+    font-size:16px; font-weight:bold; text-transform:uppercase; letter-spacing:.5px;
+  }
+  .card p{font-size:14.5px; color:var(--nx-gray-dark); line-height:1.5;}
+
+  .pill-row{display:flex; flex-wrap:wrap; gap:12px; margin-top:8px;}
+  .pill{
+    border:1.5px solid var(--nx-red); color:var(--nx-red);
+    border-radius:20px; padding:8px 18px; font-size:13.5px; font-weight:bold;
+    text-transform:uppercase; letter-spacing:.5px;
+  }
+
+  .role-list{display:flex; flex-direction:column; gap:16px; margin-top:6px;}
+  .role-row{display:flex; gap:20px; align-items:flex-start;}
+  .role-row .badge{width:52px; height:52px; font-size:20px;}
+  .role-row .role-text h3{font-size:17px; margin-bottom:4px;}
+  .role-row .role-text p{font-size:14.5px; color:var(--nx-gray-dark); line-height:1.5; max-width:640px;}
+
+  /* Summary slide */
+  .summary-list{display:flex; flex-direction:column; gap:14px; margin-top:10px;}
+  .summary-item{display:flex; align-items:center; gap:16px; font-size:19px;}
+  .summary-item .dot{width:10px; height:10px; border-radius:50%; background:var(--nx-white); flex-shrink:0;}
+
+  footer{
+    position:absolute; left:90px; bottom:36px; right:90px;
+    display:flex; align-items:center; justify-content:space-between;
+    font-size:11px; letter-spacing:1px; color:var(--nx-gray-mid);
+  }
+  .logo-mark{position:absolute; right:26px; bottom:22px; width:140px; opacity:.95;}
+  .slide.dark .logo-mark svg path, .slide.red .logo-mark svg path{}
+
+  /* Bottom nav bar */
+  .navbar{
+    position:fixed; left:0; bottom:0; width:100%; height:0;
+    display:flex; align-items:center; justify-content:center;
+    z-index:10;
+  }
+  .nav-inner{
+    position:fixed; bottom:22px; left:50%; transform:translateX(-50%);
+    display:flex; align-items:center; gap:22px;
+    background:var(--nx-white);
+    border:1px solid var(--nx-gray-light);
+    border-radius:30px; padding:10px 20px;
+    box-shadow:0 4px 18px rgba(0,0,0,.12);
+  }
+  .nav-btn{
+    width:34px; height:34px; border-radius:50%; border:1.5px solid var(--nx-gray-dark);
+    background:var(--nx-white); color:var(--nx-black); cursor:pointer;
+    display:flex; align-items:center; justify-content:center; font-size:16px;
+    transition:background .2s, color .2s, border-color .2s;
+  }
+  .nav-btn:hover{background:var(--nx-red); border-color:var(--nx-red); color:var(--nx-white);}
+  .dots{display:flex; gap:8px;}
+  .dot-ind{
+    width:8px; height:8px; border-radius:50%; background:var(--nx-gray-light);
+    cursor:pointer; transition:background .2s, transform .2s;
+  }
+  .dot-ind.on{background:var(--nx-red); transform:scale(1.25);}
+  .counter{font-size:12px; font-weight:bold; color:var(--nx-gray-dark); letter-spacing:1px; min-width:46px; text-align:center;}
+
+  @media (max-width:800px){
+    .slide{padding:40px 24px 100px 24px;}
+    h1{font-size:36px;}
+    .title-slide h1{font-size:40px;}
+    h2{font-size:26px;}
+    .cards.cols-4, .cards.cols-3, .cards.cols-2{grid-template-columns:1fr;}
+    .logo-mark{width:80px;}
+    footer{left:24px; right:24px;}
+  }
+</style>
+</head>
+<body>
+
+<div class="deck" id="deck">
+
+  <!-- SLIDE 1: TITLE -->
+  <section class="slide dark title-slide active" data-index="0">
+    <div class="title-wedge"></div>
+    <div class="kicker">NEXTEER · WAYS OF WORKING</div>
+    <h1>Agile Teams</h1>
+    <p class="subtitle">What makes a team agile, and how a high-performing agile team should actually operate day to day.</p>
+    <footer><span>NEXTEER AUTOMOTIVE</span><span>AGILE TEAMS</span></footer>
+    <div class="logo-mark"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style="width:100%; height:auto; display:block;"><rect x="1" y="1" width="22" height="14" rx="1" fill="none" stroke="#DC0202" stroke-width="1.2"/><text x="12" y="10" text-anchor="middle" font-family="Arial" font-size="5" font-weight="bold" fill="#DC0202">NEXTEER</text></svg></div>
+  </section>
+
+  <!-- SLIDE 2: WHAT IS AN AGILE TEAM -->
+  <section class="slide" data-index="1">
+    <div class="eyebrow"><span class="num">01</span><span class="line"></span><span>DEFINITION</span></div>
+    <h2>What Makes A Team Agile</h2>
+    <p class="subtitle">Agile isn't a ceremony schedule — it's a set of working conditions that let a team learn and adapt fast.</p>
+    <div class="content">
+      <div class="cards cols-4">
+        <div class="card">
+          <div class="badge">1</div>
+          <h3>Cross-Functional</h3>
+          <p>The team holds every skill needed to ship value — design, build, test, release — without waiting on outside hand-offs.</p>
+        </div>
+        <div class="card">
+          <div class="badge">2</div>
+          <h3>Self-Organizing</h3>
+          <p>The team decides how work gets done. Leaders set direction and outcomes, not task-by-task instructions.</p>
+        </div>
+        <div class="card">
+          <div class="badge">3</div>
+          <h3>Iterative</h3>
+          <p>Work ships in small, frequent increments so feedback arrives while it's still cheap to act on.</p>
+        </div>
+        <div class="card">
+          <div class="badge">4</div>
+          <h3>Customer-Focused</h3>
+          <p>Priorities are set by real user and business value, re-checked constantly rather than locked in upfront.</p>
+        </div>
+      </div>
+    </div>
+    <footer><span>NEXTEER AUTOMOTIVE</span><span>02 / 08</span></footer>
+    <div class="logo-mark"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style="width:100%; height:auto; display:block;"><rect x="1" y="1" width="22" height="14" rx="1" fill="none" stroke="#DC0202" stroke-width="1.2"/><text x="12" y="10" text-anchor="middle" font-family="Arial" font-size="5" font-weight="bold" fill="#DC0202">NEXTEER</text></svg></div>
+  </section>
+
+  <!-- SLIDE 3: CORE VALUES -->
+  <section class="slide" data-index="2">
+    <div class="eyebrow"><span class="num">02</span><span class="line"></span><span>CORE VALUES</span></div>
+    <h2>The Values That Guide Decisions</h2>
+    <p class="subtitle">When trade-offs come up, agile teams consistently lean toward the item on the left.</p>
+    <div class="content">
+      <div class="role-list">
+        <div class="role-row">
+          <div class="badge outline">A</div>
+          <div class="role-text">
+            <h3>People &amp; Interactions <span style="color:#979797; font-weight:normal;">over rigid process</span></h3>
+            <p>Process should serve the team's communication, not replace it.</p>
+          </div>
+        </div>
+        <div class="role-row">
+          <div class="badge outline">B</div>
+          <div class="role-text">
+            <h3>Working Output <span style="color:#979797; font-weight:normal;">over exhaustive documentation</span></h3>
+            <p>A tested increment proves progress more reliably than a plan on paper.</p>
+          </div>
+        </div>
+        <div class="role-row">
+          <div class="badge outline">C</div>
+          <div class="role-text">
+            <h3>Customer Collaboration <span style="color:#979797; font-weight:normal;">over fixed contracts</span></h3>
+            <p>Stakeholders stay engaged throughout, not just at kickoff and delivery.</p>
+          </div>
+        </div>
+        <div class="role-row">
+          <div class="badge outline">D</div>
+          <div class="role-text">
+            <h3>Responding To Change <span style="color:#979797; font-weight:normal;">over following a fixed plan</span></h3>
+            <p>The plan is a hypothesis. New information is allowed to change it.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    <footer><span>NEXTEER AUTOMOTIVE</span><span>03 / 08</span></footer>
+    <div class="logo-mark"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style="width:100%; height:auto; display:block;"><rect x="1" y="1" width="22" height="14" rx="1" fill="none" stroke="#DC0202" stroke-width="1.2"/><text x="12" y="10" text-anchor="middle" font-family="Arial" font-size="5" font-weight="bold" fill="#DC0202">NEXTEER</text></svg></div>
+  </section>
+
+  <!-- SLIDE 4: ROLES -->
+  <section class="slide" data-index="3">
+    <div class="eyebrow"><span class="num">03</span><span class="line"></span><span>TEAM ROLES</span></div>
+    <h2>Who Does What</h2>
+    <p class="subtitle">Three roles, three distinct jobs — none of them "manager of the others."</p>
+    <div class="content">
+      <div class="cards cols-3">
+        <div class="card">
+          <div class="badge">PO</div>
+          <h3>Product Owner</h3>
+          <p>Owns the backlog and its priority order. Represents the customer and business, and decides what "done" is worth building next.</p>
+        </div>
+        <div class="card">
+          <div class="badge">SM</div>
+          <h3>Scrum Master / Coach</h3>
+          <p>Protects the team's process, removes blockers, and coaches the team toward better ways of working — not a task assigner.</p>
+        </div>
+        <div class="card">
+          <div class="badge">DT</div>
+          <h3>Development Team</h3>
+          <p>Cross-functional group that designs, builds, tests, and delivers the work. Self-organizes around how to meet each goal.</p>
+        </div>
+      </div>
+    </div>
+    <footer><span>NEXTEER AUTOMOTIVE</span><span>04 / 08</span></footer>
+    <div class="logo-mark"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style="width:100%; height:auto; display:block;"><rect x="1" y="1" width="22" height="14" rx="1" fill="none" stroke="#DC0202" stroke-width="1.2"/><text x="12" y="10" text-anchor="middle" font-family="Arial" font-size="5" font-weight="bold" fill="#DC0202">NEXTEER</text></svg></div>
+  </section>
+
+  <!-- SLIDE 5: THE RHYTHM (DIAGRAM) -->
+  <section class="slide" data-index="4">
+    <div class="eyebrow"><span class="num">04</span><span class="line"></span><span>THE RHYTHM</span></div>
+    <h2>How The Work Cycles</h2>
+    <p class="subtitle">A fixed loop of short ceremonies keeps planning, doing, and learning connected.</p>
+    <div class="content" style="align-items:center;">
+      <svg viewBox="0 0 900 300" style="width:100%; max-width:900px; height:auto;">
+        <polyline points="160,60 340,60 340,60" fill="none" stroke="#979797" stroke-width="2"/>
+        <polyline points="450,60 630,60" fill="none" stroke="#979797" stroke-width="2"/>
+        <polyline points="740,90 740,150 740,180" fill="none" stroke="#979797" stroke-width="2"/>
+        <polyline points="630,240 450,240" fill="none" stroke="#979797" stroke-width="2"/>
+        <polyline points="340,240 160,240" fill="none" stroke="#979797" stroke-width="2"/>
+        <polyline points="60,180 60,150 60,90" fill="none" stroke="#979797" stroke-width="2"/>
+        <circle cx="340" cy="60" r="4" fill="#979797"/>
+        <circle cx="630" cy="60" r="4" fill="#979797"/>
+        <circle cx="740" cy="180" r="4" fill="#979797"/>
+        <circle cx="340" cy="240" r="4" fill="#979797"/>
+        <circle cx="60" cy="90" r="4" fill="#979797"/>
+
+        <rect x="10" y="30" width="150" height="60" rx="2" fill="#FFFFFF" stroke="#DC0202" stroke-width="2"/>
+        <text x="85" y="55" text-anchor="middle" font-family="Arial" font-size="13" font-weight="bold" fill="#0C0C0C">SPRINT</text>
+        <text x="85" y="72" text-anchor="middle" font-family="Arial" font-size="13" font-weight="bold" fill="#0C0C0C">PLANNING</text>
+
+        <rect x="365" y="30" width="150" height="60" rx="2" fill="#FFFFFF" stroke="#3F3F3F" stroke-width="2"/>
+        <text x="440" y="55" text-anchor="middle" font-family="Arial" font-size="13" font-weight="bold" fill="#0C0C0C">DAILY</text>
+        <text x="440" y="72" text-anchor="middle" font-family="Arial" font-size="13" font-weight="bold" fill="#0C0C0C">STANDUP</text>
+
+        <rect x="665" y="30" width="150" height="60" rx="2" fill="#FFFFFF" stroke="#3F3F3F" stroke-width="2"/>
+        <text x="740" y="55" text-anchor="middle" font-family="Arial" font-size="13" font-weight="bold" fill="#0C0C0C">SPRINT</text>
+        <text x="740" y="72" text-anchor="middle" font-family="Arial" font-size="13" font-weight="bold" fill="#0C0C0C">REVIEW</text>
+
+        <rect x="665" y="180" width="150" height="60" rx="2" fill="#FFFFFF" stroke="#DC0202" stroke-width="2"/>
+        <text x="740" y="205" text-anchor="middle" font-family="Arial" font-size="13" font-weight="bold" fill="#0C0C0C">RETRO-</text>
+        <text x="740" y="222" text-anchor="middle" font-family="Arial" font-size="13" font-weight="bold" fill="#0C0C0C">SPECTIVE</text>
+
+        <rect x="365" y="180" width="150" height="60" rx="2" fill="#FFFFFF" stroke="#3F3F3F" stroke-width="2"/>
+        <text x="440" y="200" text-anchor="middle" font-family="Arial" font-size="12" font-weight="bold" fill="#0C0C0C">BACKLOG</text>
+        <text x="440" y="216" text-anchor="middle" font-family="Arial" font-size="12" font-weight="bold" fill="#0C0C0C">REFINEMENT</text>
+        <text x="440" y="232" text-anchor="middle" font-family="Arial" font-size="10" fill="#979797">(ongoing)</text>
+
+        <rect x="10" y="180" width="150" height="60" rx="2" fill="#FFFFFF" stroke="#3F3F3F" stroke-width="2"/>
+        <text x="85" y="205" text-anchor="middle" font-family="Arial" font-size="13" font-weight="bold" fill="#0C0C0C">DELIVER</text>
+        <text x="85" y="222" text-anchor="middle" font-family="Arial" font-size="13" font-weight="bold" fill="#0C0C0C">&amp; LEARN</text>
+      </svg>
+    </div>
+    <footer><span>NEXTEER AUTOMOTIVE</span><span>05 / 08</span></footer>
+    <div class="logo-mark"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style="width:100%; height:auto; display:block;"><rect x="1" y="1" width="22" height="14" rx="1" fill="none" stroke="#DC0202" stroke-width="1.2"/><text x="12" y="10" text-anchor="middle" font-family="Arial" font-size="5" font-weight="bold" fill="#DC0202">NEXTEER</text></svg></div>
+  </section>
+
+  <!-- SLIDE 6: HOW THEY SHOULD WORK -->
+  <section class="slide" data-index="5">
+    <div class="eyebrow"><span class="num">05</span><span class="line"></span><span>DAILY BEHAVIORS</span></div>
+    <h2>How Agile Teams Should Actually Work</h2>
+    <p class="subtitle">The ceremonies are containers. These habits are what actually make the work agile.</p>
+    <div class="content">
+      <div class="cards cols-3">
+        <div class="card">
+          <div class="badge">✓</div>
+          <h3>Small Batches</h3>
+          <p>Break work into pieces small enough to finish and validate within a single sprint — not months-long threads.</p>
+        </div>
+        <div class="card">
+          <div class="badge">✓</div>
+          <h3>Radical Transparency</h3>
+          <p>Status, blockers, and risk are visible the moment they're known — no saving bad news for the review.</p>
+        </div>
+        <div class="card">
+          <div class="badge">✓</div>
+          <h3>Collective Ownership</h3>
+          <p>The whole team owns the sprint goal together, not just whoever's name is on a ticket.</p>
+        </div>
+        <div class="card">
+          <div class="badge">✓</div>
+          <h3>Fast Feedback Loops</h3>
+          <p>Show working increments to real stakeholders often, and let their reaction change next sprint's plan.</p>
+        </div>
+        <div class="card">
+          <div class="badge">✓</div>
+          <h3>Sustainable Pace</h3>
+          <p>Commit to a pace the team can hold sprint after sprint — agile is a marathon cadence, not a sprint to burnout.</p>
+        </div>
+        <div class="card">
+          <div class="badge">✓</div>
+          <h3>Inspect &amp; Adapt</h3>
+          <p>Every retrospective produces at least one real change to how the team works, not just a list of complaints.</p>
+        </div>
+      </div>
+    </div>
+    <footer><span>NEXTEER AUTOMOTIVE</span><span>06 / 08</span></footer>
+    <div class="logo-mark"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style="width:100%; height:auto; display:block;"><rect x="1" y="1" width="22" height="14" rx="1" fill="none" stroke="#DC0202" stroke-width="1.2"/><text x="12" y="10" text-anchor="middle" font-family="Arial" font-size="5" font-weight="bold" fill="#DC0202">NEXTEER</text></svg></div>
+  </section>
+
+  <!-- SLIDE 7: PITFALLS -->
+  <section class="slide" data-index="6">
+    <div class="eyebrow"><span class="num">06</span><span class="line"></span><span>WATCH FOR THIS</span></div>
+    <h2>Common Pitfalls To Avoid</h2>
+    <p class="subtitle">Teams that run the ceremonies but skip the mindset end up with "agile theater."</p>
+    <div class="content">
+      <div class="cards cols-2">
+        <div class="card">
+          <div class="badge outline">!</div>
+          <h3>Zombie Ceremonies</h3>
+          <p>Standups become status reports to a manager instead of a sync between teammates; retros happen but nothing changes after.</p>
+        </div>
+        <div class="card">
+          <div class="badge outline">!</div>
+          <h3>Proxy Product Owner</h3>
+          <p>The PO isn't empowered to actually decide priority, so every choice bounces back up a chain of approvals.</p>
+        </div>
+        <div class="card">
+          <div class="badge outline">!</div>
+          <h3>Story-Point Gaming</h3>
+          <p>Points get used to judge individual performance, so estimates inflate and the number stops meaning anything.</p>
+        </div>
+        <div class="card">
+          <div class="badge outline">!</div>
+          <h3>Over-Committed Sprints</h3>
+          <p>The backlog is sized by hope, not by the team's real, measured capacity — burnout and missed goals follow.</p>
+        </div>
+      </div>
+    </div>
+    <footer><span>NEXTEER AUTOMOTIVE</span><span>07 / 08</span></footer>
+    <div class="logo-mark"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style="width:100%; height:auto; display:block;"><rect x="1" y="1" width="22" height="14" rx="1" fill="none" stroke="#DC0202" stroke-width="1.2"/><text x="12" y="10" text-anchor="middle" font-family="Arial" font-size="5" font-weight="bold" fill="#DC0202">NEXTEER</text></svg></div>
+  </section>
+
+  <!-- SLIDE 8: SUMMARY -->
+  <section class="slide red" data-index="7">
+    <div class="eyebrow"><span class="num">07</span><span class="line"></span><span>SUMMARY</span></div>
+    <h2 style="color:#fff;">The Short Version</h2>
+    <div class="content">
+      <div class="summary-list">
+        <div class="summary-item"><span class="dot"></span>Small, cross-functional teams that own their work end-to-end.</div>
+        <div class="summary-item"><span class="dot"></span>Short, frequent cycles with real feedback — not big-bang delivery.</div>
+        <div class="summary-item"><span class="dot"></span>Transparency and self-organization over top-down task assignment.</div>
+        <div class="summary-item"><span class="dot"></span>Every retrospective changes something — agility is a practiced habit.</div>
+      </div>
+    </div>
+    <footer><span>NEXTEER AUTOMOTIVE</span><span>08 / 08</span></footer>
+    <div class="logo-mark"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style="width:100%; height:auto; display:block;"><rect x="1" y="1" width="22" height="14" rx="1" fill="none" stroke="#FFFFFF" stroke-width="1.2"/><text x="12" y="10" text-anchor="middle" font-family="Arial" font-size="5" font-weight="bold" fill="#FFFFFF">NEXTEER</text></svg></div>
+  </section>
+
+</div>
+
+<div class="nav-inner">
+  <button class="nav-btn" id="prevBtn" aria-label="Previous slide">&#8249;</button>
+  <div class="dots" id="dots"></div>
+  <span class="counter" id="counter">1 / 8</span>
+  <button class="nav-btn" id="nextBtn" aria-label="Next slide">&#8250;</button>
+</div>
+
+<script>
+  const slides = Array.from(document.querySelectorAll('.slide'));
+  const total = slides.length;
+  let current = 0;
+
+  const dotsEl = document.getElementById('dots');
+  slides.forEach((_, i) => {
+    const d = document.createElement('div');
+    d.className = 'dot-ind' + (i === 0 ? ' on' : '');
+    d.addEventListener('click', () => goTo(i));
+    dotsEl.appendChild(d);
+  });
+  const dotEls = Array.from(dotsEl.children);
+  const counterEl = document.getElementById('counter');
+
+  function render(prevIndex, newIndex){
+    slides.forEach((s, i) => {
+      s.classList.remove('active', 'prev');
+      if(i === newIndex){
+        s.classList.add('active');
+      } else if(i === prevIndex && prevIndex !== newIndex){
+        s.classList.add('prev');
+      }
+    });
+    dotEls.forEach((d, i) => d.classList.toggle('on', i === newIndex));
+    counterEl.textContent = (newIndex + 1) + ' / ' + total;
+  }
+
+  function goTo(i){
+    const clamped = Math.max(0, Math.min(total - 1, i));
+    if(clamped === current) return;
+    const prev = current;
+    current = clamped;
+    render(prev, current);
+  }
+
+  document.getElementById('prevBtn').addEventListener('click', () => goTo(current - 1));
+  document.getElementById('nextBtn').addEventListener('click', () => goTo(current + 1));
+
+  document.addEventListener('keydown', (e) => {
+    if(e.key === 'ArrowRight' || e.key === 'PageDown'){ goTo(current + 1); }
+    if(e.key === 'ArrowLeft' || e.key === 'PageUp'){ goTo(current - 1); }
+  });
+
+  render(0, 0);
+</script>
+
+</body>
+</html>
